@@ -1,13 +1,49 @@
 import './App.css'
+import { Outlet, RouterProvider, createBrowserRouter } from 'react-router-dom';
+import NavBar from './components/Navbar';
+import { useState } from 'react';
 
 function App() {
+  const [userName, setUserName] = useState<string | undefined>(undefined);
+
+  const router = createBrowserRouter([
+    {
+      element: (
+        <>
+          <NavBar userName={userName} />
+          <Outlet />
+        </>
+      ),
+      children: [
+        {
+          path: "/",
+          element: <div>Hello world!</div>,
+        },
+        {
+          path: "/login",
+          element: <div>Login page</div>,
+        },
+        {
+          path: "/profile",
+          element: <div>Profile page</div>,
+        },
+        {
+          path: "/createSpace",
+          element: <div>Create space page</div>,
+        },
+        {
+          path: "/spaces",
+          element: <div>Spaces page </div>,
+        },
+      ]
+    },
+  ]);
 
   return (
-  <div className="App">
-    <h1>Welcome to my React App!</h1>
-    <p>This is a simple React application.</p>
-  </div>
+    <div className="wrapper">
+      <RouterProvider router={router} />
+    </div>
   )
 }
 
-export default App
+export default App;
