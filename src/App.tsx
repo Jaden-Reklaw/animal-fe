@@ -4,8 +4,12 @@ import NavBar from './components/Navbar';
 import { useState } from 'react';
 import LoginComponent from './components/LoginComponent';
 import { AuthService } from './services/AuthService';
+import { DataService } from './services/DataService';
+import CreateAnimals from './components/animals/CreateAnimals';
 
 const authService = new AuthService();
+const dataService = new DataService(authService);
+
 
 function App() {
   const [userName, setUserName] = useState<string | undefined>(undefined);
@@ -32,12 +36,12 @@ function App() {
           element: <div>Profile page</div>,
         },
         {
-          path: "/createSpace",
-          element: <div>Create space page</div>,
+          path: "/createAnimals",
+          element: <CreateAnimals dataService={dataService} />,
         },
         {
-          path: "/spaces",
-          element: <div>Spaces page </div>,
+          path: "/animals",
+          element: <div>Animals page </div>,
         },
       ]
     },

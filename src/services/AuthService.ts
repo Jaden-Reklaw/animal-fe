@@ -1,6 +1,9 @@
 import { Amplify } from 'aws-amplify';
-import { type SignInOutput, fetchAuthSession, signIn, signOut } from '@aws-amplify/auth';
+import type { SignInOutput } from '@aws-amplify/auth';
+import { fetchAuthSession, signIn } from '@aws-amplify/auth';
 import { AuthStack } from '../../../animal-api/outputs.json';
+import { CognitoIdentityClient } from '@aws-sdk/client-cognito-identity';
+import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers';
 
 const awsRegion = 'us-east-2';
 
@@ -9,7 +12,7 @@ Amplify.configure({
         Cognito: {
             userPoolId: AuthStack.AnimalUserPoolId,
             userPoolClientId: AuthStack.AnimalUserPoolClientId,
-            identityPoolId: AuthStack.AnimalIdentityPoolId,
+            identityPoolId: AuthStack.AnimalIdentityPoolId
         },
     },
 });
@@ -18,15 +21,10 @@ export class AuthService {
 
     private user: SignInOutput | undefined;
     private userName: string = '';
+    private jwtToken: string | undefined;
+    private temporaryCredentials: object | undefined;
 
 
-    /**
-     * Logs in the user with the given username and password. If successful, stores 
-     * the user information and username in the service instance.
-     * @param userName The username of the user.
-     * @param password The password of the user.
-     * @returns The user information if login is successful, otherwise undefined.
-     */
     public async login(userName: string, password: string): Promise<object | undefined> {
         try {
             const signInOutput: SignInOutput = await signIn({
@@ -38,6 +36,7 @@ export class AuthService {
             });
             this.user = signInOutput;
             this.userName = userName;
+            await this.generateIdToken();
             return this.user;
         } catch (error) {
             console.error(error);
@@ -45,14 +44,38 @@ export class AuthService {
         }
     }
 
-    public async logout() {
-        try {
-            await signOut();
-            this.user = undefined;
-            this.userName = '';
-        } catch (error) {
-            console.error(error);
+    public async getTemporaryCredentials() {
+        if (this.temporaryCredentials) {
+            return this.temporaryCredentials
         }
+        this.temporaryCredentials = await this.generateTempCredentials()
+        return this.temporaryCredentials;
+    }
+
+    private async generateTempCredentials() {
+        const cognitoIdentityPool = `cognito-idp.${awsRegion}.amazonaws.com/${AuthStack.AnimalUserPoolId}`;
+        const cognitoIdentity = new CognitoIdentityClient({
+            credentials: fromCognitoIdentityPool({
+                clientConfig: {
+                    region: awsRegion
+                },
+                identityPoolId: AuthStack.AnimalIdentityPoolId,
+                logins: {
+                    [cognitoIdentityPool]: this.jwtToken!
+                }
+            })
+        });
+        const credentials = await cognitoIdentity.config.credentials();
+        return credentials
+    }
+
+    private async generateIdToken() {
+        const session = await fetchAuthSession();
+        this.jwtToken = session.tokens?.idToken?.toString();
+    }
+
+    public getIdToken() {
+        return this.jwtToken;
     }
 
     public getUserName() {
