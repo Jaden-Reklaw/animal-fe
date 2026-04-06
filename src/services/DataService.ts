@@ -2,6 +2,8 @@ import { AuthService } from "./AuthService";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { DataStack } from "../../../animal-api/outputs.json";
 
+const animalApiUrl = 'https://6r2f4eueug.execute-api.us-east-2.amazonaws.com/prod/animals';
+
 export class DataService {
 
     private authService: AuthService;
@@ -15,11 +17,22 @@ export class DataService {
 
     public async createAnimals(name: string, location: string, photo?: File) {
         console.log('calling create animals!!');
+        const animal = {} as any;
+        animal.name = name;
+        animal.location = location  
         if (photo) {
             const uploadUrl = await this.uploadPublicFile(photo);
-            console.log(uploadUrl);
+            animal.photoUrl = uploadUrl;
         }
-        return '123'
+        const postResult = await fetch(animalApiUrl, {
+            method: 'POST',
+            body: JSON.stringify(animal),
+            headers: {
+                'Authorization': this.authService.jwtToken!
+            }
+        });
+        const postResultJSON = await postResult.json();
+        return postResultJSON.id
     }
 
     private async uploadPublicFile(file: File) {
