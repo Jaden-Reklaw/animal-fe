@@ -1,8 +1,12 @@
 import { AuthService } from "./AuthService";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { DataStack } from "../../../animal-api/outputs.json";
 
 export class DataService {
 
     private authService: AuthService;
+    private s3Client: S3Client | undefined;
+    private awsRegion = 'us-east-2';
 
     constructor(authService: AuthService) {
         this.authService = authService;
@@ -10,9 +14,34 @@ export class DataService {
 
 
     public async createAnimals(name: string, location: string, photo?: File) {
-        const credentials = await this.authService.getTemporaryCredentials();
-        console.log(credentials);
+        console.log('calling create animals!!');
+        if (photo) {
+            const uploadUrl = await this.uploadPublicFile(photo);
+            console.log(uploadUrl);
+        }
         return '123'
+    }
+
+    private async uploadPublicFile(file: File) {
+        const credentials = await this.authService.getTemporaryCredentials();
+        console.log('Uploading file to S3 with temporary credentials', credentials);
+        if (!this.s3Client) {
+            this.s3Client = new S3Client({
+                credentials: credentials as any,
+                region: this.awsRegion
+            });
+        }
+        console.log('Uploading file to S3 bucket', DataStack.AnimalPhotosBucketName);
+        const arrayBuffer = await file.arrayBuffer();
+        const command = new PutObjectCommand({
+            Bucket: DataStack.AnimalPhotosBucketName,
+            Key: file.name,
+            ACL: 'public-read',
+            Body: new Uint8Array(arrayBuffer)
+        });
+        await this.s3Client.send(command);
+        console.log('File uploaded to S3 bucket', DataStack.AnimalPhotosBucketName, 'with key', file.name);
+        return `https://${command.input.Bucket}.s3.${this.awsRegion}.amazonaws.com/${command.input.Key}`
     }
 
     public isAuthorized() {

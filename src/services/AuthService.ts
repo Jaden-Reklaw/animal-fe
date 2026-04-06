@@ -81,4 +81,14 @@ export class AuthService {
     public getUserName() {
         return this.userName
     }
+
+    public logout() {
+        this.user = undefined;
+        this.userName = '';
+        this.jwtToken = undefined;
+        this.temporaryCredentials = undefined;
+        // Note: Amplify does not have a logout function that clears the session, so we just clear the local variables. The session will expire after a certain time and the user will be logged out automatically.
+        //clear local storage to clear the session
+        localStorage.clear();        
+    }
 }
