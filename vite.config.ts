@@ -14,4 +14,21 @@ export default defineConfig({
       './runtimeConfig': './runtimeConfig.browser',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: (id: string) => {
+          if (id.includes('react')) {
+            return 'react';
+          }
+          if (id.includes('aws-amplify')) {
+            return 'aws-amplify';
+          }
+          if (id.includes('@aws-sdk')) {
+            return 'aws-sdk';
+          }
+        },
+      },
+    },
+  },
 })

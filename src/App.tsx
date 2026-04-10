@@ -1,11 +1,12 @@
 import './App.css'
 import { Outlet, RouterProvider, createBrowserRouter } from 'react-router-dom';
 import NavBar from './components/Navbar';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import LoginComponent from './components/LoginComponent';
 import { AuthService } from './services/AuthService';
 import { DataService } from './services/DataService';
 import CreateAnimals from './components/animals/CreateAnimals';
+import Animals from './components/animals/Animals';
 
 const authService = new AuthService();
 const dataService = new DataService(authService);
@@ -14,11 +15,24 @@ const dataService = new DataService(authService);
 function App() {
   const [userName, setUserName] = useState<string | undefined>(undefined);
 
+  useEffect(() => {
+    authService.tryRestoreSession().then(restoredUserName => {
+      if (restoredUserName) {
+        setUserName(restoredUserName);
+      }
+    });
+  }, []);
+
+  const handleLogout = () => {
+    authService.logout();
+    setUserName(undefined);
+  };
+
   const router = createBrowserRouter([
     {
       element: (
         <>
-          <NavBar userName={userName} />
+          <NavBar userName={userName} onLogout={handleLogout} />
           <Outlet />
         </>
       ),
@@ -41,7 +55,7 @@ function App() {
         },
         {
           path: "/animals",
-          element: <div>Animals page </div>,
+          element: <Animals dataService={dataService} />,
         },
       ]
     },

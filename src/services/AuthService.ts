@@ -1,6 +1,6 @@
 import { Amplify } from 'aws-amplify';
 import type { SignInOutput } from '@aws-amplify/auth';
-import { fetchAuthSession, signIn } from '@aws-amplify/auth';
+import { fetchAuthSession, getCurrentUser, signIn } from '@aws-amplify/auth';
 import { AuthStack } from '../../../animal-api/outputs.json';
 import { CognitoIdentityClient } from '@aws-sdk/client-cognito-identity';
 import { fromCognitoIdentityPool } from '@aws-sdk/credential-providers';
@@ -19,10 +19,29 @@ Amplify.configure({
 
 export class AuthService {
 
-    private user: SignInOutput | undefined;
+    private user: object | undefined;
     private userName: string = '';
     public jwtToken: string | undefined;
     private temporaryCredentials: object | undefined;
+
+    public async tryRestoreSession(): Promise<string | undefined> {
+        try {
+            const currentUser = await getCurrentUser();
+            this.userName = currentUser.username;
+            await this.generateIdToken();
+            this.user = currentUser;
+            return this.userName;
+        } catch {
+            return undefined;
+        }
+    }
+
+    public isAuthorized() {
+        if (this.user) {
+            return true;
+        }
+        return false;
+    }
 
 
     public async login(userName: string, password: string): Promise<object | undefined> {

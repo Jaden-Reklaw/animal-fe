@@ -1,6 +1,7 @@
 import { AuthService } from "./AuthService";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { DataStack } from "../../../animal-api/outputs.json";
+import type { AnimalEntry } from "../models/animal.model";
 
 const animalApiUrl = 'https://6r2f4eueug.execute-api.us-east-2.amazonaws.com/prod/animals';
 
@@ -14,10 +15,26 @@ export class DataService {
         this.authService = authService;
     }
 
+    public reserveSpace(animalId: string = '123') {
+        return animalId;
+    }
+
+    public async getAnimals(): Promise<AnimalEntry[]> {
+        const getAnimalsResult = await fetch(animalApiUrl, {
+
+            method: 'GET',
+            headers: {
+                'Authorization': this.authService.jwtToken!
+            }
+        });
+        const getAnimalsResultJson = await getAnimalsResult.json();
+        return getAnimalsResultJson;
+    }
+
 
     public async createAnimals(name: string, location: string, photo?: File) {
         console.log('calling create animals!!');
-        const animal = {} as any;
+        const animal = {} as AnimalEntry;
         animal.name = name;
         animal.location = location  
         if (photo) {
@@ -58,6 +75,6 @@ export class DataService {
     }
 
     public isAuthorized() {
-        return true;
+        return this.authService.isAuthorized();
     }
 }

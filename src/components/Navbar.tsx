@@ -2,13 +2,14 @@ import { NavLink } from "react-router-dom";
 
 type NavBarProps = {
     userName: string | undefined;
+    onLogout?: () => void;
 };
-export default function NavBar({ userName }: NavBarProps) {
+export default function NavBar({ userName, onLogout }: NavBarProps) {
 
     function renderLoginLogout() {
         if (userName) {
             return (
-                <NavLink to="/logout" style={{ float: "right" }}>
+                <NavLink to="/" style={{ float: "right" }} onClick={onLogout}>
                     {userName}
                 </NavLink>
             );
